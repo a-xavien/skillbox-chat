@@ -112,6 +112,9 @@ class Chat(Factory):
             user.transport.write(f"{data}\n".encode())
 
     def send_messages_history(self, client):
+        """
+        Отправка истории сообщений новому пользователю
+        """
         if self.messages:
             for msg in self.messages:
                 client.transport.write(f"{msg}\n".encode())
