@@ -39,12 +39,26 @@ class Client(Protocol):
             print(server_message)
         else:
             if message.startswith("login:"):
-                self.login = message.replace("login:", "")
+                user_login = message.replace("login:", "")
+                notify = None
 
-                notification = f"New user connected: {self.login}"
+                # Проверяем не занят ли ввёденный новым пользователем логин
+                for client in self.factory.clients:
+                    if client.login == user_login:
+                        notify = f"Login {user_login} is already used."
+                        self.transport.write(f"{notify}\n".encode())
+                        self.transport.write("exit\n".encode())
+                        self.connectionLost(reason=notify)
 
-                self.factory.notify_all_users(notification)
-                print(notification)
+                if not notify:
+                    self.login = message.replace("login:", "")
+                    notification = f"New user connected: {self.login}"
+
+                    # Отправляем историю сообщений новому пользователю
+                    self.factory.send_messages_history(self)
+
+                    self.factory.notify_all_users(notification)
+                    print(notification)
             else:
                 print("Error: Invalid client login")
 
@@ -59,12 +73,14 @@ class Client(Protocol):
 
 class Chat(Factory):
     clients: list
+    messages: list
 
     def __init__(self):
         """
         Инициализация сервера
         """
         self.clients = []
+        self.messages = []
         print("*" * 10, "\nStart server \nCompleted [OK]")
 
     def startFactory(self):
@@ -88,8 +104,17 @@ class Chat(Factory):
         :param data:
         :return:
         """
+
+        # Пишем историю сообщений
+        self.messages.append(data)
+
         for user in self.clients:
             user.transport.write(f"{data}\n".encode())
+
+    def send_messages_history(self, client):
+        if self.messages:
+            for msg in self.messages:
+                client.transport.write(f"{msg}\n".encode())
 
 
 if __name__ == '__main__':
