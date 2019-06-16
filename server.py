@@ -18,7 +18,7 @@ class Client(Protocol):
         """
         Обработчик подключения нового клиента
         """
-        self.ip = self.transport.getHost().host
+        self.ip = self.transport.getPeer().peer
         self.factory.clients.append(self)
 
         print(f"Client connected: {self.ip}")
